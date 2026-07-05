@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#09091e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Brain Bounce" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <title>8D Brain Bounce</title>
+  <style>
+    :root{
+      --bg:#07071c;
+      --panel:rgba(255,255,255,.075);
+      --panel2:rgba(255,255,255,.11);
+      --stroke:rgba(255,255,255,.13);
+      --muted:#a8a8bf;
+      --text:#f7f3ff;
+      --pink:#ee4fc5;
+      --violet:#8d5cff;
+      --blue:#4758ff;
+      --gold:#ffd37a;
+      --shadow:0 24px 80px rgba(103,57,255,.28);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+    body{overflow-x:hidden}
+    .app{
+      min-height:100%;
+      padding:calc(env(safe-area-inset-top) + 26px) 18px calc(env(safe-area-inset-bottom) + 30px);
+      background:
+        radial-gradient(circle at 20% 18%, rgba(78,87,255,.28), transparent 28%),
+        radial-gradient(circle at 78% 8%, rgba(231,67,196,.20), transparent 25%),
+        radial-gradient(circle at 50% 86%, rgba(102,48,255,.27), transparent 33%),
+        linear-gradient(180deg,#07071b 0%,#11102f 55%,#08081d 100%);
+      position:relative;
+      isolation:isolate;
+    }
+    .app:before{
+      content:"";
+      position:fixed;inset:0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg,rgba(255,255,255,.02) 1px, transparent 1px);
+      background-size:42px 42px;
+      mask-image:linear-gradient(to bottom,rgba(0,0,0,.3),transparent 80%);
+      pointer-events:none;
+    }
+    .shell{max-width:720px;margin:0 auto}
+    header{text-align:center;margin:14px 0 34px}
+    h1{
+      margin:0;
+      font-size:clamp(42px,12vw,72px);
+      line-height:.96;
+      letter-spacing:-.06em;
+      font-weight:900;
+      background:linear-gradient(90deg,#6f75ff 0%,#b760ff 45%,#ff59c6 100%);
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+      text-shadow:0 0 40px rgba(176,70,255,.28);
+    }
+    .sub{margin:18px auto 0;max-width:520px;color:var(--muted);font-size:clamp(17px,4.6vw,24px);line-height:1.42;font-weight:750}
+    .ear-row{display:flex;align-items:center;justify-content:center;gap:20px;margin:48px 0 34px}
+    .ear{
+      width:28vw;max-width:170px;min-width:96px;aspect-ratio:1;border-radius:999px;
+      display:grid;place-items:center;position:relative;
+      transition:transform .15s ease,opacity .15s ease,filter .15s ease;
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .ear strong{font-size:clamp(38px,11vw,62px);font-weight:850}
+    .ear small{position:absolute;bottom:-30px;color:#aaa6ba;font-size:18px;font-weight:760}
+    .ear.left{background:radial-gradient(circle at 40% 38%,#5f62ff,#322f85 68%);box-shadow:0 0 44px rgba(74,84,255,.5)}
+    .ear.right{background:radial-gradient(circle at 40% 38%,#432157,#1a0f2e 70%);opacity:.45}
+    .center-icon{
+      width:24vw;max-width:134px;min-width:88px;aspect-ratio:1;border-radius:999px;display:grid;place-items:center;
+      background:radial-gradient(circle at 38% 28%,rgba(255,255,255,.12),transparent 30%),linear-gradient(135deg,#672df8,#ec48bc);
+      box-shadow:0 0 38px rgba(181,74,255,.4);
+      font-size:44px;
+    }
+    .visual-card{
+      margin:60px 0 30px;
+      height:136px;border-radius:26px;background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.035));
+      border:1px solid var(--stroke);box-shadow:var(--shadow);overflow:hidden;position:relative;
+    }
+    canvas{width:100%;height:100%;display:block}
+    .power-wrap{text-align:center;margin:34px 0 28px}
+    .power{
+      width:156px;height:156px;border:0;border-radius:999px;color:#fff;font-size:74px;line-height:1;
+      background:radial-gradient(circle at 32% 25%,rgba(255,255,255,.25),transparent 30%),linear-gradient(135deg,#654dff,#ec4fc0);
+      box-shadow:0 0 58px rgba(183,76,255,.55), inset 0 0 22px rgba(255,255,255,.08);
+      cursor:pointer;touch-action:manipulation;
+    }
+    .power:active{transform:scale(.97)}
+    .status{margin-top:22px;color:#b9a0d6;font-weight:850;font-size:22px}
+    .section-label{
+      margin:38px 0 16px;text-transform:uppercase;letter-spacing:.22em;font-size:14px;color:#9895b2;font-weight:850;
+      display:flex;justify-content:space-between;align-items:center;
+    }
+    .chips{display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
+    .chips::-webkit-scrollbar{display:none}
+    .chip{
+      flex:0 0 auto;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#c6c1d9;
+      padding:13px 17px;border-radius:18px;font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px;
+    }
+    .chip.active{color:#f6e7ff;border-color:rgba(207,85,255,.85);box-shadow:0 0 26px rgba(183,74,255,.22);background:rgba(156,64,255,.14)}
+    .file-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    label.file-btn,.fake-btn{
+      text-align:center;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:#beb9d0;border-radius:18px;
+      padding:14px 10px;font-weight:850;font-size:16px;
+    }
+    input[type=file]{display:none}
+    .hint{font-size:13px;line-height:1.48;color:#8e8aa4;text-align:center;font-weight:700;margin:12px 4px 0}
+    .panel{
+      background:linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.045));
+      border:1px solid var(--stroke);border-radius:28px;padding:24px 22px;box-shadow:0 20px 65px rgba(0,0,0,.2);
+    }
+    .control{margin:14px 0 24px}
+    .control-head{display:flex;justify-content:space-between;align-items:center;font-size:22px;font-weight:850;margin-bottom:12px}
+    .control-head span:last-child{color:#a6a0b2}
+    input[type=range]{width:100%;accent-color:#b65aff}
+    .how{margin-top:30px}
+    .how h2{font-size:24px;margin:0 0 18px}
+    .how ol{margin:0;padding-left:26px}
+    .how li{margin:13px 0;color:#c9c5d8;font-size:18px;line-height:1.4;font-weight:650}
+    .callout{
+      margin-top:22px;border:1px solid rgba(255,186,91,.35);background:rgba(255,170,72,.1);
+      border-radius:20px;padding:18px 20px;color:#ffd891;font-size:17px;line-height:1.45;font-weight:750;
+    }
+    .cards{display:grid;gap:18px;margin-top:16px}
+    .science-card{background:rgba(255,255,255,.58);border:1px solid rgba(255,255,255,.42);border-radius:26px;padding:28px 26px;color:#fff;min-height:140px}
+    .badge{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;font-size:28px;margin-bottom:20px;background:linear-gradient(135deg,#4966ff,#b755ff)}
+    .science-card:nth-child(2) .badge{background:linear-gradient(135deg,#9b48ff,#e94bff)}
+    .science-card:nth-child(3) .badge{background:linear-gradient(135deg,#ff4390,#ff3862)}
+    .science-card:nth-child(4) .badge{background:linear-gradient(135deg,#ff9e10,#ff5f10)}
+    .science-card h3{margin:0 0 16px;font-size:24px}
+    .science-card p{margin:0;color:rgba(22,20,34,.48);font-size:18px;line-height:1.45;font-weight:740}
+    footer{padding:36px 0 12px;text-align:center;color:#858199;font-size:13px;line-height:1.5;font-weight:700}
+    @media (max-width:420px){
+      .app{padding-left:16px;padding-right:16px}
+      .ear-row{gap:12px}
+      .center-icon{font-size:36px}
+      .power{width:136px;height:136px;font-size:66px}
+      .file-row{grid-template-columns:1fr}
+      .visual-card{height:118px}
+      .panel{padding:22px 18px}
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="shell">
+      <header>
+        <h1>8D Brain Bounce</h1>
+        <div class="sub">Bilateral audio movement for focus, calm, and immersive listening.</div>
+      </header>
+
+      <section class="ear-row" aria-label="Stereo movement indicator">
+        <div class="ear left" id="leftEar"><strong>L</strong><small>Left</small></div>
+        <div class="center-icon" aria-hidden="true">🎧</div>
+        <div class="ear right" id="rightEar"><strong>R</strong><small>Right</small></div>
+      </section>
+
+      <section class="visual-card"><canvas id="viz"></canvas></section>
+
+      <section class="power-wrap">
+        <button class="power" id="power" aria-label="Play or pause">⏻</button>
+        <div class="status" id="status">Ready: Deep Drone</div>
+      </section>
+
+      <section>
+        <div class="section-label">Built-in sounds</div>
+        <div class="chips">
+          <button class="chip" data-sound="ambient">♪ Ambient Pad</button>
+          <button class="chip active" data-sound="drone">♪ Deep Drone</button>
+          <button class="chip" data-sound="crystal">♪ Crystal Tone</button>
+        </div>
+        <div class="file-row">
+          <label class="file-btn">⇧ Upload Audio<input type="file" id="audioFile" accept="audio/*"></label>
+          <button class="fake-btn" id="micBtn">◉ Microphone Input</button>
+        </div>
+        <p class="hint">For iPhone and Android, upload an audio file or use the built-in sounds. Browser security prevents a web app from capturing Spotify or Apple Music app output directly.</p>
+      </section>
+
+      <section class="section-label">Controls <span>⌃</span></section>
+      <section class="panel">
+        <div class="control">
+          <div class="control-head"><span>⏱ Bounce Speed</span><span id="speedVal">3.2s</span></div>
+          <input id="speed" type="range" min=".7" max="8" value="3.2" step=".1">
+        </div>
+        <div class="control">
+          <div class="control-head"><span>◔ Intensity</span><span id="intensityVal">100%</span></div>
+          <input id="intensity" type="range" min="0" max="100" value="100" step="1">
+        </div>
+        <div class="control">
+          <div class="control-head"><span>◉ Volume</span><span id="volumeVal">70%</span></div>
+          <input id="volume" type="range" min="0" max="100" value="70" step="1">
+        </div>
+      </section>
+
+      <section class="panel how">
+        <h2>ⓘ How to Use</h2>
+        <ol>
+          <li>Put on <b>stereo headphones</b>. This is essential for the left and right movement.</li>
+          <li>Choose a built-in sound, upload audio, or use microphone input.</li>
+          <li>Adjust <b>bounce speed</b>. Slower settings feel calmer. Faster settings feel more active.</li>
+          <li>Adjust <b>intensity</b>. This controls how far the sound travels between ears.</li>
+          <li>Close your eyes and let the bilateral movement guide the listening session.</li>
+        </ol>
+        <div class="callout"><b>Important:</b> This app is for relaxation, focus support, and audio experimentation. It is not a medical device and does not diagnose, treat, or cure any condition.</div>
+        <div class="callout" id="wakeNote"><b>Keep Awake:</b> When you press play, the app will try to keep your iPhone screen awake during the session. If iOS blocks it, set Auto-Lock to Never while using the app.</div>
+      </section>
+
+      <section>
+        <div class="section-label">The science <span>⌃</span></div>
+        <h2 style="text-align:center;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.14);font-size:28px;margin:8px 0 24px">Why it works</h2>
+        <div class="cards">
+          <div class="science-card"><div class="badge">🧠</div><h3>Bilateral Stimulation</h3><p>Alternating audio engages left and right attention channels, similar in concept to bilateral techniques used in guided therapies.</p></div>
+          <div class="science-card"><div class="badge">⌖</div><h3>Focus Support</h3><p>Rhythmic movement can give the mind a steady anchor, which may help some listeners settle racing thoughts.</p></div>
+          <div class="science-card"><div class="badge">ϟ</div><h3>Adaptive Listening</h3><p>Repeated sessions may help users build familiar focus rituals around sound, breath, and attention.</p></div>
+          <div class="science-card"><div class="badge">✧</div><h3>Deep Relaxation</h3><p>The 8D panning effect creates an immersive experience that may support calm and presence.</p></div>
+        </div>
+      </section>
+
+      <footer>Best experienced with stereo headphones. Keep volume safe. Stop using it if you feel dizzy, uncomfortable, or overstimulated.</footer>
+    </div>
+  </main>
+
+<script>
+(() => {
+  let ctx, master, panner, analyser, currentSource, oscNodes = [], mediaElement;
+  let wakeLock = null;
+  let selectedSound = "drone";
+  let playing = false;
+  let raf, startTime = 0;
+
+  const $ = (id) => document.getElementById(id);
+  const power = $("power"), status = $("status"), speed = $("speed"), intensity = $("intensity"), volume = $("volume");
+  const speedVal = $("speedVal"), intensityVal = $("intensityVal"), volumeVal = $("volumeVal");
+  const leftEar = $("leftEar"), rightEar = $("rightEar"), canvas = $("viz"), file = $("audioFile");
+
+
+  async function requestScreenWakeLock(){
+    if(!("wakeLock" in navigator)) return false;
+    try{
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => {
+        wakeLock = null;
+      });
+      return true;
+    }catch(e){
+      wakeLock = null;
+      return false;
+    }
+  }
+
+  async function releaseScreenWakeLock(){
+    if(wakeLock){
+      try{ await wakeLock.release(); }catch(e){}
+      wakeLock = null;
+    }
+  }
+
+  document.addEventListener("visibilitychange", async () => {
+    if(document.visibilityState === "visible" && playing){
+      await requestScreenWakeLock();
+    }
+  });
+
+  function ensureAudio(){
+    if(ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain();
+    panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    const vol = Number(volume.value) / 100;
+    master.gain.value = vol * .6;
+    if(panner){
+      panner.connect(master);
+      master.connect(analyser);
+    }else{
+      master.connect(analyser);
+    }
+    analyser.connect(ctx.destination);
+  }
+
+  function clearSources(){
+    oscNodes.forEach(n => { try{ n.stop(); }catch(e){} try{ n.disconnect(); }catch(e){} });
+    oscNodes = [];
+    if(currentSource){ try{ currentSource.disconnect(); }catch(e){} currentSource = null; }
+    if(mediaElement){ try{ mediaElement.pause(); mediaElement.src = ""; }catch(e){} mediaElement = null; }
+  }
+
+  function connectNode(node){
+    if(panner) node.connect(panner); else node.connect(master);
+    currentSource = node;
+  }
+
+  function builtIn(name){
+    ensureAudio();
+    clearSources();
+    const now = ctx.currentTime;
+    const out = ctx.createGain();
+    out.gain.value = .34;
+
+    function osc(type, freq, gain){
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type; o.frequency.value = freq; g.gain.value = gain;
+      o.connect(g); g.connect(out); o.start(now);
+      oscNodes.push(o);
+      return o;
+    }
+
+    if(name === "ambient"){
+      osc("sine", 174, .22); osc("triangle", 261.63, .12); osc("sine", 329.63, .08);
+    } else if(name === "crystal"){
+      osc("sine", 528, .15); osc("sine", 792, .10); osc("triangle", 1056, .04);
+    } else {
+      osc("sine", 55, .36); osc("sine", 110, .18); osc("triangle", 220, .06);
+    }
+    connectNode(out);
+  }
+
+  async function start(){
+    ensureAudio();
+    ctx.resume();
+    await requestScreenWakeLock();
+    if(!currentSource) builtIn(selectedSound);
+    playing = true;
+    startTime = performance.now();
+    status.textContent = "Playing: " + labelFor(selectedSound);
+    tick();
+  }
+
+  function stop(){
+    playing = false;
+    releaseScreenWakeLock();
+    status.textContent = "Paused: " + labelFor(selectedSound);
+    if(panner) panner.pan.value = 0;
+    cancelAnimationFrame(raf);
+    drawIdle();
+  }
+
+  function labelFor(s){
+    if(s === "ambient") return "Ambient Pad";
+    if(s === "crystal") return "Crystal Tone";
+    if(s === "upload") return "Uploaded Audio";
+    if(s === "mic") return "Microphone Input";
+    return "Deep Drone";
+  }
+
+  function tick(){
+    if(!playing) return;
+    const cycle = Number(speed.value) * 1000;
+    const amount = Number(intensity.value) / 100;
+    const t = (performance.now() - startTime) / cycle;
+    const pan = Math.sin(t * Math.PI * 2) * amount;
+    if(panner) panner.pan.setTargetAtTime(pan, ctx.currentTime, .035);
+
+    const left = Math.max(0, -pan), right = Math.max(0, pan);
+    leftEar.style.transform = `scale(${1 + left * .13})`;
+    rightEar.style.transform = `scale(${1 + right * .13})`;
+    leftEar.style.opacity = .45 + (1 - Math.max(0, pan)) * .55;
+    rightEar.style.opacity = .45 + (1 + Math.min(0, pan)) * .55;
+    drawViz();
+    raf = requestAnimationFrame(tick);
+  }
+
+  function drawViz(){
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const c = canvas.getContext("2d");
+    c.scale(dpr,dpr);
+    c.clearRect(0,0,rect.width,rect.height);
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(data);
+    const bars = 52, gap = 3, w = (rect.width - (bars-1)*gap) / bars;
+    const grad = c.createLinearGradient(0,0,rect.width,0);
+    grad.addColorStop(0,"#4858ff"); grad.addColorStop(.55,"#8a4cff"); grad.addColorStop(1,"#f24fbd");
+    c.fillStyle = grad;
+    for(let i=0;i<bars;i++){
+      const v = data[i] || (100 - i*1.7);
+      const h = Math.max(3, (v/255) * rect.height * .95);
+      const x = i*(w+gap);
+      c.fillRect(x, rect.height-h, w, h);
+    }
+  }
+
+  function drawIdle(){
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const c = canvas.getContext("2d");
+    c.scale(dpr,dpr);
+    c.clearRect(0,0,rect.width,rect.height);
+    const grad = c.createLinearGradient(0,0,rect.width,0);
+    grad.addColorStop(0,"#4858ff"); grad.addColorStop(.55,"#8a4cff"); grad.addColorStop(1,"#f24fbd");
+    c.fillStyle = grad;
+    for(let i=0;i<55;i++){
+      const x = i*(rect.width/55);
+      const h = Math.max(2,(Math.exp(-i/18))*rect.height*.85);
+      c.globalAlpha = .9 - i/80;
+      c.fillRect(x, rect.height-h, rect.width/80, h);
+    }
+    c.globalAlpha = 1;
+  }
+
+  power.addEventListener("click", () => playing ? stop() : start());
+
+  document.querySelectorAll(".chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".chip").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedSound = btn.dataset.sound;
+      status.textContent = (playing ? "Playing: " : "Ready: ") + labelFor(selectedSound);
+      if(playing) builtIn(selectedSound);
+      else { ensureAudio(); builtIn(selectedSound); stop(); }
+    });
+  });
+
+  file.addEventListener("change", () => {
+    const f = file.files[0]; if(!f) return;
+    ensureAudio(); clearSources();
+    mediaElement = new Audio(URL.createObjectURL(f));
+    mediaElement.loop = true;
+    mediaElement.crossOrigin = "anonymous";
+    const src = ctx.createMediaElementSource(mediaElement);
+    selectedSound = "upload";
+    connectNode(src);
+    mediaElement.play();
+    document.querySelectorAll(".chip").forEach(b => b.classList.remove("active"));
+    status.textContent = "Playing: Uploaded Audio";
+    playing = true; startTime = performance.now(); tick();
+  });
+
+  $("micBtn").addEventListener("click", async () => {
+    ensureAudio();
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      clearSources();
+      const src = ctx.createMediaStreamSource(stream);
+      selectedSound = "mic";
+      connectNode(src);
+      playing = true; startTime = performance.now();
+      status.textContent = "Playing: Microphone Input";
+      tick();
+    }catch(e){
+      status.textContent = "Microphone permission was not granted";
+    }
+  });
+
+  speed.addEventListener("input", () => speedVal.textContent = Number(speed.value).toFixed(1) + "s");
+  intensity.addEventListener("input", () => intensityVal.textContent = intensity.value + "%");
+  volume.addEventListener("input", () => {
+    volumeVal.textContent = volume.value + "%";
+    if(master) master.gain.value = (Number(volume.value)/100) * .6;
+  });
+
+  window.addEventListener("resize", drawIdle);
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
+  }
+  drawIdle();
+})();
+</script>
+</body>
+</html>
